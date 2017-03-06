@@ -3,3 +3,5 @@
             [me.raynes.fs :as fs]
             #?(:clj [clojure.test :as t]
                :cljs [cljs.test :as t :include-macros true])))
+
+(prn (fs/file "./"))
