@@ -9,4 +9,6 @@
          (s/or :domain domain/spec-name
                :problem problem/spec-name)))
 
-(s/def ::file ::define)
+(s/def ::file
+  (s/or :define ::define
+        :defines (s/+ ::define)))
