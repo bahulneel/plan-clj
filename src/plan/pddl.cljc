@@ -1,20 +1,14 @@
 (ns plan.pddl
   (:require [clojure.spec :as s]))
 
-(defn define?
-  [x]
-  (or (= x 'define)
-      (= x 'DEFINE)))
-
-(defn domain?
-  [x]
-  (or (= x 'domain)
-      (= x 'DOMAIN)))
-
-(defn problem?
-  [x]
-  (or (= x 'problem)
-      (= x 'PROBLEM)))
+(defn symbol-pred
+  [n]
+  (fn [x]
+    (and (symbol? x)
+         (-> x
+             name
+             clojure.string/lower-case
+             (= (name n))))))
 
 (s/def ::lvar
   (s/and symbol?
@@ -28,7 +22,7 @@
 (s/def ::problem
   (s/cat :define define?
          :type-name (s/and list?
-                           (s/cat :type problem?
+                           (s/cat :type (symbol-pred 'problem)
                                   :name symbol?))
          :defs (s/+ ::element)))
 
@@ -122,9 +116,9 @@
                 :duration (s/? ::duration))))
 
 (s/def ::domain
-  (s/cat :define define?
+  (s/cat :define (symbol-pred 'define)
          :type-name (s/and list?
-                           (s/cat :type domain?
+                           (s/cat :type (symbol-pred 'domain)
                                   :name symbol?))
          :require (s/? ::requirements)
          :constants (s/? ::constants)
