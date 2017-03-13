@@ -1,12 +1,14 @@
 (ns plan.pddl-test
   (:require [plan.pddl :as sut]
-            [me.raynes.fs :as fs]
             [clojure.spec :as s]
+    #?(:clj
+            [me.raynes.fs :as fs])
     #?(:clj
             [clojure.test :as t]
        :cljs [cljs.test :as t :include-macros true])))
 
-(def files (fs/glob "./examples/strips/*.pddl"))
+(def files #?(:clj  (fs/glob "./examples/strips/*.pddl")
+              :cljs []))
 
 (t/deftest parsing
   (doseq [file files]

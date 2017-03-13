@@ -16,27 +16,27 @@
 
 (s/def ::requirements
   (s/and list?
-         (s/cat :name #(= % :requirements)
-                :reqs (s/* keyword?))))
+         (s/cat :type #(= % :requirements)
+                :requirements (s/* keyword?))))
 
 (s/def ::constants
   (s/and list?
-         (s/cat :name #(= % :constants)
-                :reqs (s/* symbol?))))
+         (s/cat :type #(= % :constants)
+                :constants (s/* symbol?))))
 
 (s/def ::predicate
   (s/and list?
-         (s/cat :name symbol?
-                :args (s/* ::lvar))))
+         (s/cat :predicate symbol?
+                :vars (s/* ::lvar))))
 
 (s/def ::predicates
   (s/and list?
-         (s/cat :name #(= % :predicates)
-                :preds (s/* ::predicate))))
+         (s/cat :type #(= % :predicates)
+                :predicates (s/* ::predicate))))
 
 (s/def ::parameters
-  (s/cat :name #(= % :parameters)
-         :params (s/coll-of ::lvar :kind list)))
+  (s/cat :type #(= % :parameters)
+         :parameters (s/coll-of ::lvar :kind list)))
 
 (s/def ::equality
   (s/and list?
@@ -48,56 +48,46 @@
          (s/cat :negation #(= % 'not)
                 :equality ::equality)))
 
+(s/def ::pos-atom
+  (s/or :constant symbol?
+        :atom (s/and list?
+               (s/cat :predicate symbol?
+                      :args (s/* ::lvar)))))
 
-(s/def ::precond-formula
-  (s/or :neg-equality ::negated-equality
-        :equality ::equality
-        :precond (s/and list?
-                        (s/cat :predicate symbol?
-                               :args (s/* ::lvar)))))
-
-(s/def ::precond-conj
-  (s/and list?
-         (s/cat :conj #(= % 'and)
-                :atoms (s/+ ::precond-formula))))
-
-(s/def ::precondition
-  (s/cat :name #(= % :precondition)
-         :precondition (s/or :conj ::precond-conj
-                             :atom ::precond-formula)))
-
-(s/def ::effect-pos-atom
-  (s/and list?
-         (s/cat :predicate symbol?
-                :args (s/* ::lvar))))
-
-(s/def ::effect-neg-atom
+(s/def ::neg-atom
   (s/and list?
          (s/cat :conj #(= % 'not)
-                :atom ::effect-pos-atom)))
+                :atom ::pos-atom)))
 
-(s/def ::effect-atom
-  (s/or :pos-atom ::effect-pos-atom
-        :neg-atom ::effect-neg-atom))
+(s/def ::atom
+  (s/or :pos-atom ::pos-atom
+        :neg-atom ::neg-atom
+        :equality ::equality
+        :negated-equality ::negated-equality))
 
-(s/def ::effect-conj
+(s/def ::conj
   (s/and list?
-         (s/cat :conj #(= % 'and)
-                :atoms (s/+ ::effect-atom))))
+         (s/cat :type #(= % 'and)
+                :atoms (s/+ ::atom))))
+
+(s/def ::precondition
+  (s/cat :type #(= % :precondition)
+         :precondition (s/or :conj ::conj
+                             :atom ::atom)))
 
 (s/def ::effect
-  (s/cat :name #(= % :effect)
-         :effect (s/or :atom ::effect-atom
-                       :conj ::effect-conj)))
+  (s/cat :type #(= % :effect)
+         :effect (s/or :atom ::atom
+                       :conj ::conj)))
 
 (s/def ::duration
-  (s/cat :name #(= % :duration)
+  (s/cat :type #(= % :duration)
          :duration integer?))
 
 (s/def ::action
   (s/and list?
-         (s/cat :name #(= % :action)
-                :action-name symbol?
+         (s/cat :type #(= % :action)
+                :name symbol?
                 :parameters (s/? ::parameters)
                 :precondition (s/? ::precondition)
                 :effect (s/? ::effect)
@@ -105,10 +95,10 @@
 
 (s/def ::domain
   (s/cat :define (symbol-pred 'define)
-         :type-name (s/and list?
-                           (s/cat :type (symbol-pred 'domain)
-                                  :name symbol?))
-         :require (s/? ::requirements)
+         :domain (s/and list?
+                      (s/cat :domain (symbol-pred 'domain)
+                             :name symbol?))
+         :requirements (s/? ::requirements)
          :constants (s/? ::constants)
          :predicates ::predicates
          :actions (s/+ ::action)))
