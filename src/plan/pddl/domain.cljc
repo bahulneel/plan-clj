@@ -38,42 +38,36 @@
   (s/cat :type #(= % :parameters)
          :parameters (s/coll-of ::lvar :kind list)))
 
-(s/def ::equality
+(s/def ::constraint
   (s/and list?
-         (s/cat :equality #(= % '=)
+         (s/cat :type #{'= '!=}
                 :args (s/cat :lhs symbol? :rhs symbol?))))
 
-(s/def ::negated-equality
-  (s/and list?
-         (s/cat :negation #(= % 'not)
-                :equality ::equality)))
-
-(s/def ::pos-atom
+(s/def ::atom
   (s/or :constant symbol?
-        :atom (s/and list?
-               (s/cat :predicate symbol?
-                      :args (s/* ::lvar)))))
+        :constraint ::constraint
+        :predicate (s/and list?
+                          (s/cat :predicate symbol?
+                                 :args (s/* ::lvar)))))
 
 (s/def ::neg-atom
   (s/and list?
-         (s/cat :conj #(= % 'not)
-                :atom ::pos-atom)))
+         (s/cat :type #(= % 'not)
+                :atom ::atom)))
 
-(s/def ::atom
-  (s/or :pos-atom ::pos-atom
-        :neg-atom ::neg-atom
-        :equality ::equality
-        :negated-equality ::negated-equality))
+(s/def ::atom-formula
+  (s/or :atom ::atom
+        :neg-atom ::neg-atom))
 
 (s/def ::conj
   (s/and list?
          (s/cat :type #(= % 'and)
-                :atoms (s/+ ::atom))))
+                :atoms (s/+ ::atom-formula))))
 
 (s/def ::precondition
   (s/cat :type #(= % :precondition)
          :precondition (s/or :conj ::conj
-                             :atom ::atom)))
+                             :atom ::atom-formula)))
 
 (s/def ::effect
   (s/cat :type #(= % :effect)
@@ -96,8 +90,8 @@
 (s/def ::domain
   (s/cat :define (symbol-pred 'define)
          :domain (s/and list?
-                      (s/cat :domain (symbol-pred 'domain)
-                             :name symbol?))
+                        (s/cat :domain (symbol-pred 'domain)
+                               :name symbol?))
          :requirements (s/? ::requirements)
          :constants (s/? ::constants)
          :predicates ::predicates
