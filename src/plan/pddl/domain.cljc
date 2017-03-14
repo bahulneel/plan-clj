@@ -1,27 +1,25 @@
 (ns plan.pddl.domain
-  (:require [clojure.spec :as s]))
+  (:require [plan.domain :as domain]
+            [clojure.spec :as s]))
 
-(defn symbol-pred
-  [n]
-  (fn [x]
-    (and (symbol? x)
-         (-> x
-             name
-             clojure.string/lower-case
-             (= (name n))))))
+(defmacro symbol-pred
+  [s]
+  (let [n (name s)
+        n-lower (symbol (clojure.string/lower-case n))
+        n-upper (symbol (clojure.string/upper-case n))]
+    `'#{~n-lower ~n-upper}))
 
 (s/def ::lvar
-  (s/and symbol?
-         #(= \? (first (name %)))))
+  ::domain/lvar)
 
 (s/def ::requirements
   (s/and list?
-         (s/cat :type #(= % :requirements)
+         (s/cat :type #{:requirements}
                 :requirements (s/* keyword?))))
 
 (s/def ::constants
   (s/and list?
-         (s/cat :type #(= % :constants)
+         (s/cat :type #{:constants}
                 :constants (s/* symbol?))))
 
 (s/def ::predicate
@@ -31,11 +29,11 @@
 
 (s/def ::predicates
   (s/and list?
-         (s/cat :type #(= % :predicates)
+         (s/cat :type #{:predicates}
                 :predicates (s/* ::predicate))))
 
 (s/def ::parameters
-  (s/cat :type #(= % :parameters)
+  (s/cat :type #{:parameters}
          :parameters (s/coll-of ::lvar :kind list)))
 
 (s/def ::constraint
@@ -52,7 +50,7 @@
 
 (s/def ::neg-atom
   (s/and list?
-         (s/cat :type #(= % 'not)
+         (s/cat :type #{'not}
                 :atom ::atom)))
 
 (s/def ::atom-formula
@@ -61,26 +59,26 @@
 
 (s/def ::conj
   (s/and list?
-         (s/cat :type #(= % 'and)
+         (s/cat :type #{'and}
                 :atoms (s/+ ::atom-formula))))
 
 (s/def ::precondition
-  (s/cat :type #(= % :precondition)
+  (s/cat :type #{:precondition}
          :precondition (s/or :conj ::conj
                              :atom ::atom-formula)))
 
 (s/def ::effect
-  (s/cat :type #(= % :effect)
+  (s/cat :type #{:effect}
          :effect (s/or :atom ::atom
                        :conj ::conj)))
 
 (s/def ::duration
-  (s/cat :type #(= % :duration)
-         :duration integer?))
+  (s/cat :type #{:duration}
+         :duration (s/and integer? pos?)))
 
 (s/def ::action
   (s/and list?
-         (s/cat :type #(= % :action)
+         (s/cat :type #{:action}
                 :name symbol?
                 :parameters (s/? ::parameters)
                 :precondition (s/? ::precondition)
@@ -88,9 +86,9 @@
                 :duration (s/? ::duration))))
 
 (s/def ::domain
-  (s/cat :define (symbol-pred 'define)
+  (s/cat :define (symbol-pred define)
          :domain (s/and list?
-                        (s/cat :domain (symbol-pred 'domain)
+                        (s/cat :domain (symbol-pred domain)
                                :name symbol?))
          :requirements (s/? ::requirements)
          :constants (s/? ::constants)
@@ -98,3 +96,26 @@
          :actions (s/+ ::action)))
 
 (def spec-name ::domain)
+
+(s/fdef pddll>domain
+        :args (s/cat :domain ::domain)
+        :ret :plan.domain/definition)
+
+(defn pddl>domain
+  [pddl]
+  (if (s/valid? ::domain pddl)
+    (let [pddl-domain (s/conform ::domain pddl)
+          domain-name (name (get-in pddl-domain [:domain :name]))
+          preds (into {}
+                      (comp
+                        (map (fn [{:keys [predicate vars]}]
+                               (let [predicate-name (keyword domain-name
+                                                             (name predicate))]
+                                 [predicate-name
+                                  (domain/predicate predicate-name vars)]))))
+                      (get-in pddl-domain [:predicates :predicates]))
+          actions []]
+      (prn (first (get-in pddl-domain [:actions])))
+      {::domain/name    (keyword domain-name)
+       ::domain/schema  preds
+       ::domain/actions actions})))

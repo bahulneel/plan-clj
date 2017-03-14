@@ -7,7 +7,8 @@
             [clojure.test :as t]
        :cljs [cljs.test :as t :include-macros true])))
 
-(def files #?(:clj  (fs/glob "./examples/strips/*.pddl")
+(def files #?(:clj  (mapcat fs/glob ["./examples/strips/domain/*.pddl"
+                                     "./examples/strips/problem/*.pddl"])
               :cljs []))
 
 (t/deftest parsing
