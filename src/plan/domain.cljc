@@ -41,3 +41,12 @@
          :name  predicate-name
          :vars  vars}))
 
+(defn action
+  [acction-name vars precodition effect]
+  (clean-map
+    #:plan.domai.action
+        {::type        :action
+         :name         acction-name
+         :vars         vars
+         :precondition precodition
+         :effect       effect}))

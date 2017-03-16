@@ -24,6 +24,3 @@
                          (do (println (str "In: " file))
                              (s/explain ::domain/definition domain)
                              (s/explain-data ::domain/definition domain)))))))))
-
-
-
