@@ -38,20 +38,28 @@
 
 (defn object
   [ident]
-  {::type :object
+  {::type  :object
    ::ident ident})
 
 (defn predicate
   [predicate args]
   #:plan.problem.predicate
-  {::type :predicate
-   :name predicate
-   :args args})
+      {::type :predicate
+       :name  predicate
+       :args  args})
 
 (defn problem
   [name domain schema init goal]
-  {::name name
+  {::name   name
    ::domain domain
    ::schema schema
-   ::init init
-   ::goal goal})
+   ::init   init
+   ::goal   goal})
+
+(defn init
+  [problem domain]
+  (when (= (:domain problem) (:name domain))
+    {:plan/problem problem
+     :plan/domain  domain}))
+
+
