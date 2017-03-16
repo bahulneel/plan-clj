@@ -15,7 +15,7 @@
 (s/def ::name
   keyword?)
 
-(s/def ::type #{:predicate})
+(s/def ::type #{:predicate :action})
 
 (s/def :plan.domain.predicate/name
   keyword?)
@@ -26,6 +26,47 @@
 (s/def ::predicate
   (s/keys :req [::type :plan.domain.predicate/name]
           :opt [:plan.domain.predicate/vars]))
+
+(s/def :plan.domain.action/name
+  keyword?)
+
+(s/def ::arg
+  (s/or :lvar ::lvar
+        :constant symbol?))
+
+(s/def :plan.domain.action/vars
+  (s/coll-of ::arg))
+
+(s/def ::conjunction
+  (s/tuple #{::and} (s/cat ::formula (s/* ::formula))))
+
+(s/def ::constraint
+  (s/tuple '#{= !=} ::arg ::arg))
+
+(s/def ::negation
+  (s/tuple #{::not} ::formula))
+
+(s/def ::formula
+  (s/or :predicate ::predicate
+        :conjuntion ::conjunction
+        :constraint ::constraint
+        :negation ::negation))
+
+(s/def :plan.domain.action/precondition
+  ::formula)
+
+(s/def :plan.domain.action/effect
+  ::formula)
+
+(s/def ::action
+  (s/keys :req [::type
+                :plan.domain.action/name
+                :plan.domain.action/vars
+                :plan.domain.action/precondition
+                :plan.domain.action/effect]))
+
+(s/def ::actions
+  (s/map-of keyword? ::action))
 
 (s/def ::schema
   (s/map-of keyword? ::predicate))
@@ -44,7 +85,7 @@
 (defn action
   [acction-name vars precodition effect]
   (clean-map
-    #:plan.domai.action
+    #:plan.domain.action
         {::type        :action
          :name         acction-name
          :vars         vars

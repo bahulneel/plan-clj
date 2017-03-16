@@ -112,10 +112,9 @@
     [[:conj {:atoms ?as}]] [::domain/and (mapv (partial formula domain-name) ?as)]
     [[:neg-atom {:atom ?a}]] [::domain/not (formula domain-name ?a)]
     [[:atom ?a]] (formula domain-name ?a)
-    [[:predicate {:predicate ?p :args ?a}]] [(keyword domain-name (name ?p)) ?a]
-    [[:predicate {:predicate ?p}]] [(keyword domain-name (name ?p))]
-    [[:constraint {:type ?t :args ?a}]] (list ?t ?a)))
-
+    [[:predicate {:predicate ?p :args ?a}]] (domain/predicate (keyword domain-name (name ?p)) ?a)
+    [[:predicate {:predicate ?p}]] (domain/predicate (keyword domain-name (name ?p)) nil)
+    [[:constraint {:type ?t :args {:lhs ?lhs :rhs ?rhs}}]] [?t ?lhs ?rhs]))
 
 (defn action-xf
   [domain-name]
@@ -130,11 +129,6 @@
                                      (formula domain-name effect))]
            [action-id action]))))
 
-
-(s/fdef pddll>domain
-        :args (s/cat :domain ::domain)
-        :ret :plan.domain/definition)
-
 (defn pddl>domain
   [pddl]
   (if (s/valid? ::domain pddl)
@@ -147,3 +141,7 @@
                         (action-xf domain-name)
                         (get-in pddl-domain [:actions]))]
       (domain/domain (keyword domain-name) predicates actions))))
+
+(s/fdef pddll>domain
+        :args (s/cat :domain ::domain)
+        :ret ::domain/definition)
