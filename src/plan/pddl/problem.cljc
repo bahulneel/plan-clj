@@ -1,5 +1,7 @@
 (ns plan.pddl.problem
-  (:require [clojure.spec :as s]))
+  (:require [plan.problem :as problem]
+            [clojure.spec :as s]
+            [clojure.core.match :as m]))
 
 (defn symbol-pred
   [n]
@@ -52,7 +54,7 @@
 (s/def ::goal
   (s/and list?
          (s/cat :key (kw-pred :goal)
-                :goal (s/or :pred ::predicate
+                :goal (s/or :predicate ::predicate
                             :conj ::conjunction))))
 
 (s/def ::problem
@@ -67,3 +69,58 @@
          :goal ::goal))
 
 (def spec-name ::problem)
+
+(defn arg-xf
+  [plan-name]
+  (map (fn [n]
+         (keyword plan-name (name n)))))
+
+(defn pred>pred
+  [plan-name domain-name {:keys [literal objects]}]
+  (problem/predicate (keyword domain-name (name literal))
+                     (into [] (arg-xf plan-name) objects)))
+
+(defn predicate-xf
+  [plan-name domain-name]
+  (map (partial pred>pred plan-name domain-name)))
+
+(defn goal-formula
+  [plan-name domain-name goal]
+  (m/match
+    [goal]
+    [[:predicate ?p]] (pred>pred plan-name domain-name ?p)
+    [[:conj {:preds ?ps}]] [::problem/and
+                            (into []
+                                  (predicate-xf plan-name domain-name)
+                                  ?ps)]))
+
+(defn object-xf
+  [plan-name]
+  (map (fn [n]
+         (let [ident (keyword plan-name (name n))]
+           [ident (problem/object ident)]))))
+
+(defn pddl>problem
+  [pddl]
+  (if (s/valid? ::problem pddl)
+    (let [pddl-problem (s/conform ::problem pddl)
+          plan-name (name (get-in pddl-problem [:type-name :name]))
+          domain-name (name (get-in pddl-problem [:domain :name]))
+          init (into []
+                     (predicate-xf plan-name domain-name)
+                     (get-in pddl-problem [:init :predicates]))
+          goal (goal-formula plan-name
+                             domain-name
+                             (get-in pddl-problem [:goal :goal]))
+          objects (into {}
+                        (object-xf plan-name)
+                        (get-in pddl-problem [:objects :objects]))]
+      (problem/problem (keyword plan-name)
+                       (keyword domain-name)
+                       objects
+                       init
+                       goal))))
+
+(s/fdef pddll>problem
+        :args (s/cat :problem ::problem)
+        :ret ::problem/definition)
