@@ -12,8 +12,6 @@
 (def files #?(:clj  (fs/glob "./examples/strips/problem/*.pddl")
               :cljs []))
 
-(stest/instrument `plan.pddl.domain)
-
 (t/deftest parsing
   (doseq [file files]
     (t/testing (str "Validity of " file)
