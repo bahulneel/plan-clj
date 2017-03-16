@@ -94,6 +94,6 @@
 
 (defn domain
   [domain-name schema actions]
-  {::name domain-name
-   ::schema schema
+  {::name    domain-name
+   ::schema  schema
    ::actions actions})
