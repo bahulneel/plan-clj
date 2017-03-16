@@ -146,6 +146,4 @@
           actions (into {}
                         (action-xf domain-name)
                         (get-in pddl-domain [:actions]))]
-      {::domain/name    (keyword domain-name)
-       ::domain/schema  predicates
-       ::domain/actions actions})))
+      (domain/domain (keyword domain-name) predicates actions))))

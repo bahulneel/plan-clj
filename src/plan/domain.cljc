@@ -50,3 +50,9 @@
          :vars         vars
          :precondition precodition
          :effect       effect}))
+
+(defn domain
+  [domain-name schema actions]
+  {::name domain-name
+   ::schema schema
+   ::actions actions})
