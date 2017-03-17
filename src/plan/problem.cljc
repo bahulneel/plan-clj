@@ -23,7 +23,6 @@
   (s/or :conj ::conjuntion
         :pred ::predicate))
 
-
 (s/def ::object
   (s/keys :req [::type ::ident]))
 
@@ -55,11 +54,3 @@
    ::schema schema
    ::init   init
    ::goal   goal})
-
-(defn init
-  [problem domain]
-  (when (= (:domain problem) (:name domain))
-    {:plan/problem problem
-     :plan/domain  domain}))
-
-

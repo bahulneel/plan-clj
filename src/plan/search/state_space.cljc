@@ -1,6 +1,6 @@
 (ns plan.search.state-space)
 
-(declare sat? applicable effect transition relevant transition-inv)
+(declare sat? applicable effect transition relevant transition-inv relevant-lifted)
 
 (defn forward
   ([operators state goal]
@@ -30,3 +30,17 @@
              plan
              (recur (next actions)))))))))
 
+(defn lifted-backward
+  ([operators state goal]
+   (lifted-backward operators state goal []))
+  ([operators state goal plan]
+   (if (sat? state goal)
+     plan
+     (loop [actions (relevant-lifted operators goal)]
+       (when-let [[op subst] (first actions)]
+         (let [action (subst op)
+               goal' (transition-inv (subst goal))
+               plan' (into [action] (subst plan))]
+           (if-let [plan (lifted-backward operators state goal' plan')]
+             plan
+             (recur (next actions)))))))))
