@@ -101,7 +101,8 @@
 (defrecord State [state]
   search/State
   (-sat? [_ goal]
-    (empty? (clojure.set/difference state (:state goal))))
+    (let [goals (clojure.set/difference (:state goal) state)]
+      (empty? goals)))
   (-transition [this action]
     (let [{:keys [:plan.domain.action/effect]} action
           [pos neg] (domain/rels effect)

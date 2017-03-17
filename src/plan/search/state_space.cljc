@@ -1,34 +1,27 @@
 (ns plan.search.state-space
   (:require [plan.search.protocols :as p]))
 
-(defn action-info
-  [action]
-  (let [{:keys [:plan.domain.action/name :plan.domain.action/vars]} action]
-    (into [name] vars)))
-
 (defn forward
   ([operators state goal]
    (forward operators state goal [] #{} []))
   ([operators state goal plan states info]
-   (when (zero? (mod (apply + info) 10))
-     (print (str "\r" info "                       ")))
+   (print (str "\r" (p/sat? state goal) " " info "                       "))
    (if (p/sat? state goal)
      plan
-     (when (< (count plan) 13)
-       (loop [actions (p/applicable operators state)]
-         (when-let [action (first actions)]
-           (let [state' (p/transition state action)
-                 plan' (conj plan action)]
-             (if-not (states state')
-               (if-let [plan (forward operators
-                                      state'
-                                      goal
-                                      plan'
-                                      (conj states state')
-                                      (conj info (count actions)))]
-                 plan
-                 (recur (next actions)))
-               (recur (next actions))))))))))
+     (loop [actions (p/applicable operators state)]
+       (if-let [action (first actions)]
+         (let [state' (p/transition state action)
+               plan' (conj plan action)]
+           (if-not (states state')
+             (if-let [plan (forward operators
+                                    state'
+                                    goal
+                                    plan'
+                                    (conj states state')
+                                    (conj info (count actions)))]
+               plan
+               (recur (next actions)))
+             (recur (next actions)))))))))
 
 (defn backward
   ([operators state goal]

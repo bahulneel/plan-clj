@@ -114,8 +114,9 @@
         ks (clojure.set/intersection x-ks y-ks)]
     (if (seq ks)
       (let [x' (select-keys x ks)
-            y' (select-keys y ks)]
-        (= x' y'))
+            y' (select-keys y ks)
+            conflict? (not= x' y')]
+        conflict?)
       false)))
 
 (defmulti unify* #'formula-type)
@@ -129,6 +130,7 @@
                                 y ys
                                 :when (not (conflict? x y))]
                             (merge x y)))))
+          #{{}}
           (map #(unify* % rels binding) fs)))
 
 (defmethod unify* :predicate
@@ -168,3 +170,4 @@
 (defn rels
   [formula]
   (rels* formula [#{} #{}] false))
+
