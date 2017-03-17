@@ -1,5 +1,8 @@
 (ns plan.domain
-  (:require [clojure.spec :as s]))
+  (:require [clojure.spec :as s]
+            [clojure.set]
+            [clojure.core.unify :as u]))
+
 
 (defn clean-map
   [m]
@@ -83,11 +86,11 @@
          :vars  vars}))
 
 (defn action
-  [acction-name vars precodition effect]
+  [action-name vars precodition effect]
   (clean-map
     #:plan.domain.action
         {::type        :action
-         :name         acction-name
+         :name         action-name
          :vars         vars
          :precondition precodition
          :effect       effect}))
@@ -97,3 +100,71 @@
   {::name    domain-name
    ::schema  schema
    ::actions actions})
+
+(defn formula-type
+  [formula _ _]
+  (if (sequential? formula)
+    (first formula)
+    (::type formula)))
+
+(defn conflict?
+  [x y]
+  (let [x-ks (set (keys x))
+        y-ks (set (keys y))
+        ks (clojure.set/intersection x-ks y-ks)]
+    (if (seq ks)
+      (let [x' (select-keys x ks)
+            y' (select-keys y ks)]
+        (= x' y'))
+      false)))
+
+(defmulti unify* #'formula-type)
+
+(defmethod unify* ::and
+  [[_ fs] rels binding]
+  (reduce (fn [xs ys]
+            (into #{}
+                  (remove nil?
+                          (for [x xs
+                                y ys
+                                :when (not (conflict? x y))]
+                            (merge x y)))))
+          (map #(unify* % rels binding) fs)))
+
+(defmethod unify* :predicate
+  [p rels binding]
+  (into #{}
+        (keep (fn [state]
+                (let [{:keys [:plan.domain.predicate/name :plan.domain.predicate/vars]} p
+                      rel (u/subst (into [name] vars) binding)
+                      b (u/unify state rel)]
+                  (when b
+                    (merge binding b)))))
+        rels))
+
+(defn unify-formula
+  [formula rels]
+  (unify* formula rels {}))
+
+(defmulti rels* #'formula-type)
+
+(defmethod rels* ::and
+  [[_ fs] rels neg?]
+  (reduce (fn [rels f]
+            (rels* f rels neg?))
+          rels
+          fs))
+
+(defmethod rels* :predicate
+  [p rels neg?]
+  (let [{:keys [:plan.domain.predicate/name :plan.domain.predicate/vars]} p
+        rel (into [name] vars)]
+    (update rels (if neg? 1 0) conj rel)))
+
+(defmethod rels* ::not
+  [[_ f] rels neg?]
+  (rels* f rels true))
+
+(defn rels
+  [formula]
+  (rels* formula [#{} #{}] false))

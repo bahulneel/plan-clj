@@ -1,6 +1,8 @@
 (ns plan.db.set
   (:require [plan.domain :as domain]
             [plan.problem :as problem]
+            [clojure.core.unify :as u]
+            [plan.search.protocols :as search]
             [clojure.spec :as s]))
 
 (s/def ::fact
@@ -95,3 +97,37 @@
 (s/fdef init
         :args (s/cat :db ::db :problem ::problem/definition)
         :ret ::db)
+
+(defrecord State [state]
+  search/State
+  (-sat? [_ goal]
+    (empty? (clojure.set/difference state (:state goal))))
+  (-transition [this action]
+    (let [{:keys [:plan.domain.action/effect]} action
+          [pos neg] (domain/rels effect)
+          state' (-> state
+                     (clojure.set/difference neg)
+                     (clojure.set/union pos))]
+      (->State state'))))
+
+(defn unify-precond
+  [[n action] state]
+  (let [{:keys [:plan.domain.action/precondition]} action
+        bindings (domain/unify-formula precondition (:state state))]
+    (map (fn [b]
+           (u/subst action b))
+         bindings)))
+
+(defrecord Domain [domain]
+  search/Search
+  (-applicable [_ state]
+    (->> domain
+         ::domain/actions
+         (mapcat #(unify-precond % state)))))
+
+(defn state-space-search
+  [db planner]
+  (let [{:keys [::domain ::init ::goal]} db]
+    (planner (->Domain domain)
+             (->State init)
+             (->State goal))))
