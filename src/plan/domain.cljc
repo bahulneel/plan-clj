@@ -139,14 +139,17 @@
 
 (defmethod unify* :predicate
   [p rels binding]
-  (into #{}
-        (keep (fn [state]
-                (let [{:keys [:plan.domain.predicate/name :plan.domain.predicate/vars]} p
-                      rel (u/subst (into [name] vars) binding)
-                      b (u/unify state rel)]
-                  (when b
-                    (merge binding b)))))
-        rels))
+  (let [{:keys [:plan.domain.predicate/name :plan.domain.predicate/vars]} p]
+    (into #{}
+          (comp
+            (filter (fn [[rel-name]]
+                      (= rel-name name)))
+            (keep (fn [state]
+                    (let [rel (u/subst (into [name] vars) binding)
+                          b (u/unify state rel)]
+                      (when b
+                        (merge binding b))))))
+          rels)))
 
 (defn unify-formula
   [formula rels]
