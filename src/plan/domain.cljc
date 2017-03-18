@@ -123,15 +123,19 @@
 
 (defmethod unify* ::and
   [[_ fs] rels binding]
-  (reduce (fn [xs ys]
-            (into #{}
-                  (remove nil?
-                          (for [x xs
-                                y ys
-                                :when (not (conflict? x y))]
-                            (merge x y)))))
-          #{{}}
-          (map #(unify* % rels binding) fs)))
+  (transduce (map #(unify* % rels binding))
+             (fn
+               ([xs]
+                xs)
+               ([xs ys]
+                (into #{}
+                      (remove nil?
+                              (for [x xs
+                                    y ys
+                                    :when (not (conflict? x y))]
+                                (merge x y))))))
+             #{{}}
+             fs))
 
 (defmethod unify* :predicate
   [p rels binding]

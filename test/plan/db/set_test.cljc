@@ -1,6 +1,7 @@
 (ns plan.db.set-test
   (:require [plan.db.set :as sut]
             [plan.example.hanoi :as hanoi]
+            [plan.example.bw :as bw]
             [clojure.spec :as s]
             [clojure.spec.test :as stest]
             [plan.search.state-space :as ss]
@@ -24,11 +25,28 @@
   (let [{:keys [:plan.domain.action/name :plan.domain.action/vars]} action]
     (into [name] vars)))
 
-(t/deftest testing-planning
+(t/deftest testing-hanoi
   (let [db (-> (sut/make-db)
                (sut/add-domain hanoi/domain)
                (sut/init hanoi/problem))]
     (t/testing "forward planning"
       (let [plan (time (sut/state-space-search db ss/forward))]
+        (clojure.pprint/pprint (map action-info plan))
+        (t/is (not (empty? plan)))))
+    (t/testing "forward planning (stream)"
+      (let [plan (time (sut/state-space-search db ss/forward-stream))]
+        (clojure.pprint/pprint (map action-info plan))
+        (t/is (not (empty? plan)))))))
+
+(t/deftest testing-bw
+  (let [db (-> (sut/make-db)
+               (sut/add-domain bw/domain)
+               (sut/init bw/problem))]
+    (t/testing "forward planning"
+      (let [plan (time (sut/state-space-search db ss/forward))]
+        (clojure.pprint/pprint (map action-info plan))
+        (t/is (not (empty? plan)))))
+    (t/testing "forward planning (stream)"
+      (let [plan (time (sut/state-space-search db ss/forward-stream))]
         (clojure.pprint/pprint (map action-info plan))
         (t/is (not (empty? plan)))))))

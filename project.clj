@@ -8,4 +8,3 @@
                  [org.clojure/core.match "0.3.0-alpha4"]
                  [org.clojure/core.unify "0.5.7"]]
   :profiles {:dev {:dependencies [[org.clojure/test.check "0.9.0"]]}})
-
