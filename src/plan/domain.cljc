@@ -128,12 +128,11 @@
                ([xs]
                 xs)
                ([xs ys]
-                (into #{}
-                      (remove nil?
-                              (for [x xs
-                                    y ys
-                                    :when (not (conflict? x y))]
-                                (merge x y))))))
+                (set (remove nil?
+                             (for [x xs
+                                   y ys
+                                   :when (not (conflict? x y))]
+                               (merge x y))))))
              #{{}}
              fs))
 
