@@ -33,8 +33,8 @@
       (let [plan (time (sut/state-space-search db ss/forward))]
         (clojure.pprint/pprint (map action-info plan))
         (t/is (not (empty? plan)))))
-    (t/testing "forward planning (stream)"
-      (let [plan (time (sut/state-space-search db ss/forward-stream))]
+    (t/testing "forward planning (rpg)"
+      (let [plan (time (sut/state-space-search db ss/forward-rpg))]
         (clojure.pprint/pprint (map action-info plan))
         (t/is (not (empty? plan)))))))
 
@@ -46,7 +46,7 @@
       (let [plan (time (sut/state-space-search db ss/forward))]
         (clojure.pprint/pprint (map action-info plan))
         (t/is (not (empty? plan)))))
-    (t/testing "forward planning (stream)"
-      (let [plan (time (sut/state-space-search db ss/forward-stream))]
+    (t/testing "forward planning (rpg)"
+      (let [plan (time (sut/state-space-search db ss/forward-rpg))]
         (clojure.pprint/pprint (map action-info plan))
         (t/is (not (empty? plan)))))))

@@ -1,14 +1,29 @@
 (ns plan.search.state-space
   (:require [plan.search.protocols :as p]))
 
+(defn rpg
+  ([operators state goal]
+   (rpg operators state goal [#{state}]))
+  ([operators state goal rpg]
+   (if (p/sat? state goal)
+     rpg
+     (when (< (count rpg) 100)
+       (let [actions (p/applicable operators state)
+             state' (reduce (fn [s a]
+                              (p/transition s a true))
+                            state
+                            actions)
+             rpg' (conj rpg (set actions) state')]
+         (when-not (= state state')
+           (recur operators state' goal rpg')))))))
+
 (defn forward
   ([operators state goal]
    (forward operators state goal [] #{} []))
   ([operators state goal plan states info]
    (if (p/sat? state goal)
      plan
-     (when (< (count info) 12)
-       (print (str "\r" info "                       "))
+     (when (< (count info) 10)
        (loop [actions (p/applicable operators state)]
          (if-let [action (first actions)]
            (let [state' (p/transition state action)
@@ -24,29 +39,35 @@
                  (recur (next actions)))
                (recur (next actions))))))))))
 
-(defn forward-stream
+(defn forward-rpg
   ([operators state goal]
-   (forward-stream operators state goal [] #{} []))
-  ([operators state goal plan states info]
-   (if (p/sat? state goal)
-     plan
-     (when (< (count info) 12)
-       (print (str "\r" info "                       "))
-       (let [actions (p/applicable operators state)]
-         (->> actions
-              (map (fn [action]
-                       [(p/transition state action) action]))
-              (remove (fn [[state action]]
-                        (states state)))
-              (map-indexed (fn [i [state action]]
-                             (forward-stream operators
-                                             state
-                                             goal
-                                             (conj plan action)
-                                             (conj states state)
-                                             (conj info (- (count actions) i)))))
-              (remove nil?)
-              first))))))
+   (when-let [rpg-init (rpg operators state goal)]
+     (let [f (count rpg-init)]
+       (loop [open-list [[f [] state #{} f]]]
+         (when-let [[f plan state visited? best] (first open-list)]
+           #_(prn (reduce
+                      (fn [m [f plan _ _ best]]
+                        (update m (count plan) conj [best f]))
+                      (sorted-map)
+                      open-list))
+           (if (p/sat? state goal)
+             plan
+             (let [g (inc (count plan))]
+               (recur
+                 (->> (p/applicable operators state)
+                      (keep (fn [action]
+                              (let [state (p/transition state action)]
+                                (when-not (visited? state)
+                                  [state (conj plan action)]))))
+                      (keep (fn [[state plan]]
+                              (when-let [rpg (rpg operators state goal)]
+                                (let [h (count rpg)
+                                      f (+ g h)
+                                      visited? (conj visited? state)]
+                                  [f plan state visited? (min best f)]))))
+                      (into (rest open-list))
+                      (sort-by (fn [[f plan _ _ best]]
+                                 [best f]))))))))))))
 
 (defn backward
   ([operators state goal]

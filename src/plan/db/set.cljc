@@ -71,16 +71,6 @@
                      :init ::problem/goal)
         :ret ::state)
 
-(defn transition
-  [state action]
-  (let [state' state]
-    state'))
-
-(s/fdef transition
-        :args (s/cat :state ::state
-                     :action ::domain/action)
-        :ret ::state)
-
 (defn init
   [db problem]
   (let [domain-name (get-in db [::domain ::domain/name])]
@@ -103,9 +93,10 @@
   (-sat? [_ goal]
     (let [goals (clojure.set/difference (:state goal) state)]
       (empty? goals)))
-  (-transition [this action]
+  (-transition [this action pos-only?]
     (let [{:keys [:plan.domain.action/effect]} action
           [pos neg] (domain/rels effect)
+          neg (if pos-only? #{} neg)
           state' (-> state
                      (clojure.set/difference neg)
                      (clojure.set/union pos))]

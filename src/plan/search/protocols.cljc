@@ -2,7 +2,7 @@
 
 (defprotocol State
   (-sat? [state goal])
-  (-transition [state action])
+  (-transition [state action pos-only?])
   (-transition-inv [state action]))
 
 (defn state?
@@ -14,8 +14,10 @@
   (-sat? state goal))
 
 (defn transition
-  [state action]
-  (-transition state action))
+  ([state action]
+   (transition state action false))
+  ([state action pos-only?]
+   (-transition state action pos-only?)))
 
 (defn transition-inv
   [state action]
