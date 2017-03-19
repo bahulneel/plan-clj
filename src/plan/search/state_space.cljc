@@ -23,7 +23,7 @@
   ([operators state goal plan states info]
    (if (p/sat? state goal)
      plan
-     (when (< (count info) 10)
+     (when (< (count info) 7)
        (loop [actions (p/applicable operators state)]
          (if-let [action (first actions)]
            (let [state' (p/transition state action)
@@ -43,17 +43,18 @@
   ([operators state goal]
    (when-let [rpg-init (rpg operators state goal)]
      (let [f (count rpg-init)]
-       (loop [open-list [[f [] state #{} f]]]
-         (when-let [[f plan state visited? best] (first open-list)]
-           #_(prn (reduce
-                      (fn [m [f plan _ _ best]]
-                        (update m (count plan) conj [best f]))
-                      (sorted-map)
-                      open-list))
+       (loop [visited? #{}
+              open-list [[f [] state f]]]
+         (when-let [[f plan state best] (first open-list)]
+           (prn (reduce (fn [m [f plan _ best]]
+                          (update-in m [(count plan) best f] (fnil inc 0)))
+                        (sorted-map)
+                        open-list))
            (if (p/sat? state goal)
              plan
              (let [g (inc (count plan))]
                (recur
+                 (conj visited? state)
                  (->> (p/applicable operators state)
                       (keep (fn [action]
                               (let [state (p/transition state action)]
@@ -62,12 +63,13 @@
                       (keep (fn [[state plan]]
                               (when-let [rpg (rpg operators state goal)]
                                 (let [h (count rpg)
-                                      f (+ g h)
-                                      visited? (conj visited? state)]
-                                  [f plan state visited? (min best f)]))))
+                                      f (+ g h)]
+                                  [f plan state (min best f)]))))
                       (into (rest open-list))
-                      (sort-by (fn [[f plan _ _ best]]
-                                 [best f]))))))))))))
+                      (sort-by (fn [[f plan _ best]]
+                                 (let [v (-> plan last :plan.domain.action/vars)
+                                       an (- (count v) (count (set v)))]
+                                   [best an f])))))))))))))
 
 (defn backward
   ([operators state goal]

@@ -175,5 +175,6 @@
 
 (defn rels
   [formula]
-  (rels* formula [#{} #{}] false))
+  (let [u (rels* formula [#{} #{}] false)]
+    u))
 
